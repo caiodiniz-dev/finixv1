@@ -113,6 +113,8 @@ class TransactionIn(BaseModel):
     category: str
     description: Optional[str] = ""
     date: datetime
+    recurring: bool = False
+    recurringFrequency: Optional[Literal["monthly", "weekly", "yearly"]] = None
 
 class TransactionOut(TransactionIn):
     id: str
@@ -129,6 +131,20 @@ class GoalOut(GoalIn):
     id: str
     userId: str
     createdAt: datetime
+
+class BudgetIn(BaseModel):
+    category: str
+    limit: float = Field(..., gt=0)
+
+class BudgetOut(BudgetIn):
+    id: str
+    userId: str
+    createdAt: datetime
+
+class ProfileUpdate(BaseModel):
+    name: Optional[str] = Field(None, min_length=2, max_length=80)
+    currentPassword: Optional[str] = None
+    newPassword: Optional[str] = Field(None, min_length=6, max_length=128)
 
 class UserUpdate(BaseModel):
     name: Optional[str] = None
@@ -151,8 +167,14 @@ def tx_public(t: dict) -> dict:
         "id": t["id"], "userId": t["userId"], "title": t["title"],
         "amount": t["amount"], "type": t["type"], "category": t["category"],
         "description": t.get("description", ""), "date": t["date"],
+        "recurring": t.get("recurring", False),
+        "recurringFrequency": t.get("recurringFrequency"),
         "createdAt": t["createdAt"],
     }
+
+def budget_public(b: dict) -> dict:
+    return {"id": b["id"], "userId": b["userId"], "category": b["category"],
+            "limit": b["limit"], "createdAt": b["createdAt"]}
 
 def goal_public(g: dict) -> dict:
     return {
@@ -463,6 +485,157 @@ async def admin_stats(_: dict = Depends(require_admin)):
         "globalIncome": income, "globalExpense": expense,
     }
 
+# ---------------- Profile ----------------
+@api.put("/profile")
+async def update_profile(payload: ProfileUpdate, user: dict = Depends(get_current_user)):
+    updates: dict = {}
+    if payload.name:
+        updates["name"] = payload.name.strip()
+    if payload.newPassword:
+        if not payload.currentPassword:
+            raise HTTPException(status_code=400, detail="Informe a senha atual")
+        db_user = await db.users.find_one({"id": user["id"]})
+        if not verify_password(payload.currentPassword, db_user["password_hash"]):
+            raise HTTPException(status_code=400, detail="Senha atual incorreta")
+        updates["password_hash"] = hash_password(payload.newPassword)
+    if not updates:
+        raise HTTPException(status_code=400, detail="Nada para atualizar")
+    await db.users.update_one({"id": user["id"]}, {"$set": updates})
+    u = await db.users.find_one({"id": user["id"]}, {"_id": 0, "password_hash": 0})
+    return user_public(u)
+
+# ---------------- Budgets ----------------
+@api.get("/budgets")
+async def list_budgets(user: dict = Depends(get_current_user)):
+    items = await db.budgets.find({"userId": user["id"]}, {"_id": 0}).to_list(200)
+    # compute spent this month per category
+    now = datetime.now(timezone.utc)
+    month_start = datetime(now.year, now.month, 1, tzinfo=timezone.utc)
+    txs = await db.transactions.find({
+        "userId": user["id"], "type": "EXPENSE",
+        "date": {"$gte": month_start}
+    }, {"_id": 0}).to_list(5000)
+    spent_by_cat: dict = {}
+    for t in txs:
+        spent_by_cat[t["category"]] = spent_by_cat.get(t["category"], 0) + t["amount"]
+    result = []
+    for b in items:
+        spent = spent_by_cat.get(b["category"], 0)
+        result.append({**budget_public(b), "spent": spent,
+                       "percentage": (spent / b["limit"] * 100) if b["limit"] > 0 else 0})
+    return result
+
+@api.post("/budgets")
+async def create_budget(payload: BudgetIn, user: dict = Depends(get_current_user)):
+    existing = await db.budgets.find_one({"userId": user["id"], "category": payload.category})
+    if existing:
+        raise HTTPException(status_code=400, detail="Já existe um orçamento para esta categoria")
+    b = {**payload.model_dump(), "id": str(uuid.uuid4()),
+         "userId": user["id"], "createdAt": datetime.now(timezone.utc)}
+    await db.budgets.insert_one(b)
+    b.pop("_id", None)
+    return budget_public(b)
+
+@api.put("/budgets/{budget_id}")
+async def update_budget(budget_id: str, payload: BudgetIn, user: dict = Depends(get_current_user)):
+    res = await db.budgets.update_one({"id": budget_id, "userId": user["id"]},
+                                      {"$set": payload.model_dump()})
+    if res.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Orçamento não encontrado")
+    b = await db.budgets.find_one({"id": budget_id}, {"_id": 0})
+    return budget_public(b)
+
+@api.delete("/budgets/{budget_id}")
+async def delete_budget(budget_id: str, user: dict = Depends(get_current_user)):
+    res = await db.budgets.delete_one({"id": budget_id, "userId": user["id"]})
+    if res.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Orçamento não encontrado")
+    return {"ok": True}
+
+# ---------------- AI Insights ----------------
+@api.post("/insights/ai")
+async def ai_insights(user: dict = Depends(get_current_user)):
+    try:
+        from emergentintegrations.llm.chat import LlmChat, UserMessage
+    except ImportError:
+        raise HTTPException(status_code=500, detail="emergentintegrations não instalado")
+
+    key = os.environ.get("EMERGENT_LLM_KEY")
+    if not key:
+        raise HTTPException(status_code=500, detail="EMERGENT_LLM_KEY não configurado")
+
+    txs = await db.transactions.find({"userId": user["id"]}, {"_id": 0}).to_list(2000)
+    goals = await db.goals.find({"userId": user["id"]}, {"_id": 0}).to_list(200)
+
+    if not txs:
+        return {"insights": [{"type": "info", "title": "Sem dados suficientes",
+                              "message": "Adicione algumas transações para receber análises personalizadas."}]}
+
+    income = sum(t["amount"] for t in txs if t["type"] == "INCOME")
+    expense = sum(t["amount"] for t in txs if t["type"] == "EXPENSE")
+    by_cat: dict = {}
+    for t in txs:
+        if t["type"] == "EXPENSE":
+            by_cat[t["category"]] = by_cat.get(t["category"], 0) + t["amount"]
+    top_cats = sorted(by_cat.items(), key=lambda x: -x[1])[:5]
+
+    # Monthly trend
+    now = datetime.now(timezone.utc)
+    this_month_start = datetime(now.year, now.month, 1, tzinfo=timezone.utc)
+    prev_month_end = this_month_start
+    py, pm = (now.year, now.month - 1) if now.month > 1 else (now.year - 1, 12)
+    prev_month_start = datetime(py, pm, 1, tzinfo=timezone.utc)
+    this_exp = sum(t["amount"] for t in txs if t["type"] == "EXPENSE" and _as_dt(t["date"]) >= this_month_start)
+    prev_exp = sum(t["amount"] for t in txs if t["type"] == "EXPENSE"
+                   and prev_month_start <= _as_dt(t["date"]) < prev_month_end)
+
+    summary = (
+        f"Nome: {user['name']}\n"
+        f"Receitas totais: R$ {income:.2f}\n"
+        f"Despesas totais: R$ {expense:.2f}\n"
+        f"Saldo: R$ {income - expense:.2f}\n"
+        f"Gastos este mês: R$ {this_exp:.2f} (mês anterior: R$ {prev_exp:.2f})\n"
+        f"Top 5 categorias de gasto: " + ", ".join([f"{k} R${v:.0f}" for k, v in top_cats]) + "\n"
+        f"Metas ativas: {len(goals)} — progresso: " +
+        ", ".join([f"{g['title']} {g['currentAmount']/max(g['targetAmount'],1)*100:.0f}%" for g in goals[:3]])
+    )
+
+    system = (
+        "Você é o consultor financeiro pessoal do Finix. Sua missão é analisar os dados "
+        "financeiros do usuário e devolver EXCLUSIVAMENTE um JSON array válido com "
+        "exatamente 4 a 6 insights. Cada insight tem os campos: "
+        '"type" (um de: "success", "warning", "info"), '
+        '"title" (curto, no máximo 40 caracteres), e '
+        '"message" (recomendação prática e específica em português BR, no máximo 180 caracteres). '
+        "Use tom amigável, direto e motivador. Cite números reais. "
+        "Responda APENAS com o JSON array, sem markdown, sem texto antes ou depois."
+    )
+    try:
+        chat = LlmChat(
+            api_key=key,
+            session_id=f"finix-insights-{user['id']}",
+            system_message=system,
+        ).with_model("anthropic", "claude-sonnet-4-5-20250929")
+        resp = await chat.send_message(UserMessage(text=f"Dados do usuário:\n{summary}\n\nGere os 4-6 insights agora."))
+    except Exception as e:
+        logger.error(f"AI insights error: {e}")
+        raise HTTPException(status_code=503, detail="Serviço de IA indisponível no momento")
+
+    import json, re
+    raw = resp.strip()
+    # strip markdown fences if any
+    m = re.search(r"\[.*\]", raw, re.DOTALL)
+    if m:
+        raw = m.group(0)
+    try:
+        parsed = json.loads(raw)
+        insights = [i for i in parsed if isinstance(i, dict) and {"type", "title", "message"} <= set(i)]
+        return {"insights": insights[:6], "generated_at": datetime.now(timezone.utc).isoformat()}
+    except Exception:
+        return {"insights": [{"type": "info", "title": "Análise gerada",
+                              "message": resp[:500]}],
+                "generated_at": datetime.now(timezone.utc).isoformat()}
+
 # ---------------- Health ----------------
 @api.get("/")
 async def root():
@@ -476,6 +649,7 @@ async def on_startup():
     await db.users.create_index("email", unique=True)
     await db.transactions.create_index([("userId", 1), ("date", -1)])
     await db.goals.create_index("userId")
+    await db.budgets.create_index([("userId", 1), ("category", 1)], unique=True)
     await seed_admin()
     await seed_demo()
     logger.info("Finix backend started")
@@ -534,6 +708,11 @@ async def seed_demo():
                 "date": d, "createdAt": now,
             })
     await db.transactions.insert_many(docs)
+    await db.budgets.insert_many([
+        {"id": str(uuid.uuid4()), "userId": uid, "category": "Alimentação", "limit": 1000, "createdAt": now},
+        {"id": str(uuid.uuid4()), "userId": uid, "category": "Lazer", "limit": 300, "createdAt": now},
+        {"id": str(uuid.uuid4()), "userId": uid, "category": "Transporte", "limit": 400, "createdAt": now},
+    ])
     await db.goals.insert_many([
         {"id": str(uuid.uuid4()), "userId": uid, "title": "Reserva de emergência",
          "targetAmount": 15000, "currentAmount": 6200,

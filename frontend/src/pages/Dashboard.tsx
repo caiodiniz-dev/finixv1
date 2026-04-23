@@ -1,21 +1,23 @@
 import React, { useEffect, useState } from 'react';
 import {
   TrendingUp, TrendingDown, Wallet, PiggyBank, FileDown, FileSpreadsheet,
-  ArrowUpRight, ArrowDownRight, Info, AlertTriangle, CheckCircle2
+  ArrowUpRight, ArrowDownRight, Info, AlertTriangle, CheckCircle2, Sparkles, Loader2
 } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
   PieChart, Pie, Cell, Legend, BarChart, Bar
 } from 'recharts';
 import { api } from '../services/api';
-import { DashboardData } from '../types';
+import { DashboardData, Insight } from '../types';
 import { currency, dateBR, CATEGORY_COLORS } from '../utils/format';
 import toast from 'react-hot-toast';
 
 export default function Dashboard() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [aiInsights, setAiInsights] = useState<Insight[] | null>(null);
+  const [aiLoading, setAiLoading] = useState(false);
 
   useEffect(() => {
     api.get('/dashboard').then((r) => setData(r.data)).catch(() => toast.error('Erro ao carregar')).finally(() => setLoading(false));
@@ -32,6 +34,17 @@ export default function Dashboard() {
       URL.revokeObjectURL(url);
       toast.success('Exportado!');
     } catch { toast.error('Erro ao exportar'); }
+  };
+
+  const generateAi = async () => {
+    setAiLoading(true);
+    try {
+      const r = await api.post('/insights/ai');
+      setAiInsights(r.data.insights || []);
+      toast.success('Análise da IA pronta!');
+    } catch (e: any) {
+      toast.error('Falha ao gerar análise');
+    } finally { setAiLoading(false); }
   };
 
   if (loading || !data) {
@@ -61,6 +74,9 @@ export default function Dashboard() {
           <p className="text-slate-500 dark:text-slate-400 mt-1">Acompanhe seu progresso financeiro</p>
         </div>
         <div className="flex gap-2">
+          <button onClick={generateAi} disabled={aiLoading} className="btn-primary" data-testid="ai-insights-btn">
+            {aiLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Sparkles className="w-4 h-4" /> Análise com IA</>}
+          </button>
           <button onClick={() => handleExport('pdf')} className="btn-outline" data-testid="export-pdf">
             <FileDown className="w-4 h-4" /> PDF
           </button>
@@ -122,6 +138,60 @@ export default function Dashboard() {
           })}
         </div>
       )}
+
+      {/* AI Insights panel */}
+      <AnimatePresence>
+        {aiInsights && (
+          <motion.div
+            initial={{ opacity: 0, y: 10, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="relative rounded-2xl p-6 overflow-hidden border border-brand-purple/20"
+            style={{ background: 'linear-gradient(135deg, rgba(37,99,235,0.08) 0%, rgba(124,58,237,0.12) 50%, rgba(34,197,94,0.08) 100%)' }}
+            data-testid="ai-insights-panel"
+          >
+            <div className="absolute -top-20 -right-20 w-64 h-64 rounded-full bg-gradient-to-br from-brand-blue/30 to-brand-purple/30 blur-3xl" />
+            <div className="relative flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-blue to-brand-purple flex items-center justify-center text-white shadow-glow">
+                  <Sparkles className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-display font-bold text-lg">Análise com IA · Claude Sonnet 4.5</h3>
+                  <p className="text-xs text-slate-600 dark:text-slate-400">Conselhos personalizados baseados nas suas finanças</p>
+                </div>
+              </div>
+              <button onClick={() => setAiInsights(null)} className="btn-ghost !p-2" title="Fechar">✕</button>
+            </div>
+            <div className="relative grid md:grid-cols-2 gap-3">
+              {aiInsights.map((ins, i) => {
+                const cfg = {
+                  info: { icon: Info, cls: 'bg-white border-blue-200 text-blue-900 dark:bg-slate-900 dark:border-blue-500/30 dark:text-blue-200' },
+                  warning: { icon: AlertTriangle, cls: 'bg-white border-amber-200 text-amber-900 dark:bg-slate-900 dark:border-amber-500/30 dark:text-amber-200' },
+                  success: { icon: CheckCircle2, cls: 'bg-white border-emerald-200 text-emerald-900 dark:bg-slate-900 dark:border-emerald-500/30 dark:text-emerald-200' },
+                }[ins.type] || { icon: Info, cls: 'bg-white border-slate-200' };
+                return (
+                  <motion.div
+                    key={i}
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.08 }}
+                    className={`rounded-xl border p-4 ${cfg.cls}`}
+                  >
+                    <div className="flex gap-3">
+                      <cfg.icon className="w-5 h-5 shrink-0 mt-0.5" />
+                      <div>
+                        <div className="font-semibold text-sm">{ins.title}</div>
+                        <div className="text-xs opacity-90 mt-1 leading-relaxed">{ins.message}</div>
+                      </div>
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Charts */}
       <div className="grid lg:grid-cols-3 gap-4">

@@ -16,6 +16,8 @@ export interface Transaction {
   category: string;
   description?: string;
   date: string;
+  recurring?: boolean;
+  recurringFrequency?: 'monthly' | 'weekly' | 'yearly' | null;
   createdAt: string;
 }
 
@@ -44,4 +46,14 @@ export interface DashboardData {
   categories: { category: string; amount: number }[];
   recent: Transaction[];
   insights: Insight[];
+}
+
+export interface Budget {
+  id: string;
+  userId: string;
+  category: string;
+  limit: number;
+  spent: number;
+  percentage: number;
+  createdAt: string;
 }

@@ -8,6 +8,8 @@ import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import Transactions from './pages/Transactions';
 import Goals from './pages/Goals';
+import Budgets from './pages/Budgets';
+import Profile from './pages/Profile';
 import Admin from './pages/Admin';
 import AppLayout from './layouts/AppLayout';
 import { Logo } from './components/Logo';
@@ -53,6 +55,8 @@ export default function App() {
             <Route path="dashboard" element={<Dashboard />} />
             <Route path="transactions" element={<Transactions />} />
             <Route path="goals" element={<Goals />} />
+            <Route path="budgets" element={<Budgets />} />
+            <Route path="profile" element={<Profile />} />
             <Route path="admin" element={<ProtectedRoute admin><Admin /></ProtectedRoute>} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />

@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
-  Plus, Search, Filter, Edit2, Trash2, X, Loader2, ArrowUpRight, ArrowDownRight
+  Plus, Search, Filter, Edit2, Trash2, X, Loader2, ArrowUpRight, ArrowDownRight, RefreshCw
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useForm } from 'react-hook-form';
@@ -18,6 +18,8 @@ const schema = yup.object({
   category: yup.string().required('Categoria obrigatória'),
   description: yup.string().default(''),
   date: yup.string().required('Data obrigatória'),
+  recurring: yup.boolean().default(false),
+  recurringFrequency: yup.string().nullable().default(null),
 });
 type Form = yup.InferType<typeof schema>;
 
@@ -107,7 +109,10 @@ export default function Transactions() {
                   {t.type === 'INCOME' ? <ArrowUpRight className="w-5 h-5" /> : <ArrowDownRight className="w-5 h-5" />}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="font-semibold truncate">{t.title}</div>
+                  <div className="font-semibold truncate flex items-center gap-2">
+                    {t.title}
+                    {t.recurring && <span className="chip bg-brand-purple/10 text-brand-purple !py-0.5 text-[10px]"><RefreshCw className="w-3 h-3" /> {t.recurringFrequency || 'recorrente'}</span>}
+                  </div>
                   <div className="text-xs text-slate-500 flex items-center gap-2">
                     <span className="chip bg-slate-100 dark:bg-slate-700 !py-0.5 text-slate-600 dark:text-slate-300">{t.category}</span>
                     {dateBR(t.date)}
@@ -146,7 +151,7 @@ export default function Transactions() {
 
 function TxModal({ editing, onClose, onSaved }: { editing: Transaction | null; onClose: () => void; onSaved: () => void }) {
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<Form>({
-    resolver: yupResolver(schema),
+    resolver: yupResolver(schema) as any,
     defaultValues: editing
       ? {
           title: editing.title,
@@ -155,13 +160,23 @@ function TxModal({ editing, onClose, onSaved }: { editing: Transaction | null; o
           category: editing.category,
           description: editing.description || '',
           date: dateISOForInput(editing.date),
+          recurring: editing.recurring || false,
+          recurringFrequency: (editing.recurringFrequency as any) || null,
         }
-      : { type: 'EXPENSE', category: 'Alimentação', date: dateISOForInput(), description: '' } as any,
+      : { type: 'EXPENSE', category: 'Alimentação', date: dateISOForInput(), description: '', recurring: false, recurringFrequency: null } as any,
   });
+
+  const recurring = (editing?.recurring) ?? false;
+  const [isRec, setIsRec] = React.useState<boolean>(recurring);
 
   const onSubmit = async (data: Form) => {
     try {
-      const payload = { ...data, date: new Date(data.date).toISOString() };
+      const payload: any = {
+        ...data,
+        date: new Date(data.date).toISOString(),
+        recurring: isRec,
+        recurringFrequency: isRec ? (data.recurringFrequency || 'monthly') : null,
+      };
       if (editing) await api.put(`/transactions/${editing.id}`, payload);
       else await api.post('/transactions', payload);
       toast.success(editing ? 'Atualizado' : 'Criado');
@@ -217,6 +232,29 @@ function TxModal({ editing, onClose, onSaved }: { editing: Transaction | null; o
                 {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
               </select>
             </div>
+          </div>
+          <div className="rounded-xl bg-slate-50 dark:bg-slate-800 p-3">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={isRec}
+                onChange={(e) => setIsRec(e.target.checked)}
+                className="w-4 h-4 rounded accent-brand-blue"
+                data-testid="tx-recurring"
+              />
+              <span className="text-sm font-medium">Transação recorrente</span>
+              <RefreshCw className="w-4 h-4 text-brand-purple ml-auto" />
+            </label>
+            {isRec && (
+              <div className="mt-2">
+                <label className="text-xs text-slate-500">Frequência</label>
+                <select {...register('recurringFrequency')} className="input mt-1" data-testid="tx-recurring-frequency" defaultValue={editing?.recurringFrequency || 'monthly'}>
+                  <option value="monthly">Mensal</option>
+                  <option value="weekly">Semanal</option>
+                  <option value="yearly">Anual</option>
+                </select>
+              </div>
+            )}
           </div>
           <div>
             <label className="text-sm font-medium">Descrição (opcional)</label>

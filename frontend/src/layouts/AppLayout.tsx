@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link, NavLink, useNavigate, Outlet } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
-  LayoutDashboard, ArrowLeftRight, Target, Shield, LogOut, Menu, X, Download, Sun, Moon
+  LayoutDashboard, ArrowLeftRight, Target, Shield, LogOut, Menu, X, Download, Sun, Moon, Wallet, User as UserIcon
 } from 'lucide-react';
 import { Logo } from '../components/Logo';
 import { useAuth } from '../contexts/AuthContext';
@@ -23,7 +23,9 @@ export default function AppLayout() {
   const links = [
     { to: '/app/dashboard', icon: LayoutDashboard, label: 'Dashboard', testid: 'nav-dashboard' },
     { to: '/app/transactions', icon: ArrowLeftRight, label: 'Transações', testid: 'nav-transactions' },
+    { to: '/app/budgets', icon: Wallet, label: 'Orçamentos', testid: 'nav-budgets' },
     { to: '/app/goals', icon: Target, label: 'Metas', testid: 'nav-goals' },
+    { to: '/app/profile', icon: UserIcon, label: 'Perfil', testid: 'nav-profile' },
   ];
   if (user.role === 'ADMIN') {
     links.push({ to: '/app/admin', icon: Shield, label: 'Admin', testid: 'nav-admin' });
