@@ -1,0 +1,47 @@
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  role: 'USER' | 'ADMIN';
+  blocked: boolean;
+  createdAt: string;
+}
+
+export interface Transaction {
+  id: string;
+  userId: string;
+  title: string;
+  amount: number;
+  type: 'INCOME' | 'EXPENSE';
+  category: string;
+  description?: string;
+  date: string;
+  createdAt: string;
+}
+
+export interface Goal {
+  id: string;
+  userId: string;
+  title: string;
+  targetAmount: number;
+  currentAmount: number;
+  deadline: string;
+  createdAt: string;
+}
+
+export interface Insight {
+  type: 'info' | 'warning' | 'success';
+  title: string;
+  message: string;
+}
+
+export interface DashboardData {
+  balance: number;
+  income: number;
+  expense: number;
+  saved: number;
+  monthly: { month: string; income: number; expense: number }[];
+  categories: { category: string; amount: number }[];
+  recent: Transaction[];
+  insights: Insight[];
+}
