@@ -1,6 +1,10 @@
 import axios from 'axios';
 
-const BACKEND = process.env.REACT_APP_BACKEND_URL;
+const BACKEND = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8000';
+
+if (!process.env.REACT_APP_BACKEND_URL) {
+  console.warn('REACT_APP_BACKEND_URL não está configurado. Usando http://localhost:8000 como fallback.');
+}
 
 export const api = axios.create({
   baseURL: `${BACKEND}/api`,
@@ -8,7 +12,7 @@ export const api = axios.create({
 });
 
 api.interceptors.request.use((config: any) => {
-  const token = localStorage.getItem('finix_token');
+  const token = localStorage.getItem('finix_token') || sessionStorage.getItem('finix_token');
   if (token) {
     config.headers = config.headers || {};
     config.headers.Authorization = `Bearer ${token}`;
@@ -21,6 +25,7 @@ api.interceptors.response.use(
   (err) => {
     if (err?.response?.status === 401) {
       localStorage.removeItem('finix_token');
+      sessionStorage.removeItem('finix_token');
       if (!window.location.pathname.startsWith('/login') && !window.location.pathname.startsWith('/register') && window.location.pathname !== '/') {
         window.location.href = '/login';
       }

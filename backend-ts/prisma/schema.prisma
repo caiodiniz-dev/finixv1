@@ -1,0 +1,79 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(uuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         String   @default("USER")
+  blocked      Boolean  @default(false)
+  photo        String? // Base64 or URL for profile picture
+  createdAt    DateTime @default(now())
+
+  transactions Transaction[]
+  goals        Goal[]
+  budgets      Budget[]
+
+  @@map("users")
+}
+
+model Transaction {
+  id                 String   @id @default(uuid())
+  userId             String
+  title              String
+  amount             Float
+  type               String
+  category           String
+  description        String?
+  date               DateTime
+  recurring          Boolean  @default(false)
+  recurringFrequency String?
+  paymentMethod      String?  @default("pix")
+  installments       Int      @default(1)
+  installmentNumber  Int? // Current installment number (1, 2, 3, etc.)
+  totalInstallments  Int? // Total number of installments
+  totalAmount        Float? // Total amount for installments (amount * installments)
+  currency           String   @default("BRL")
+  createdAt          DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("transactions")
+}
+
+model Goal {
+  id            String   @id @default(uuid())
+  userId        String
+  title         String
+  targetAmount  Float
+  currentAmount Float    @default(0)
+  deadline      DateTime
+  createdAt     DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("goals")
+}
+
+model Budget {
+  id        String   @id @default(uuid())
+  userId    String
+  category  String
+  limit     Float
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, category])
+  @@map("budgets")
+}

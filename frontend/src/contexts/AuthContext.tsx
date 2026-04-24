@@ -4,7 +4,7 @@ import { User } from '../types';
 
 interface AuthCtx {
   user: User | null | undefined; // undefined = loading, null = not logged in
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string, remember?: boolean) => Promise<void>;
   register: (name: string, email: string, password: string) => Promise<void>;
   logout: () => void;
 }
@@ -15,18 +15,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null | undefined>(undefined);
 
   useEffect(() => {
-    const token = localStorage.getItem('finix_token');
+    const token = localStorage.getItem('finix_token') || sessionStorage.getItem('finix_token');
     if (!token) { setUser(null); return; }
     api.get('/auth/me').then((r) => setUser(r.data)).catch(() => {
       localStorage.removeItem('finix_token');
+      sessionStorage.removeItem('finix_token');
       setUser(null);
     });
   }, []);
 
-  const login = async (email: string, password: string) => {
+  const login = async (email: string, password: string, remember = true) => {
     try {
       const { data } = await api.post('/auth/login', { email, password });
-      localStorage.setItem('finix_token', data.token);
+      const storage = remember ? localStorage : sessionStorage;
+      storage.setItem('finix_token', data.token);
       setUser(data.user);
     } catch (e) { throw new Error(apiErrorMessage(e)); }
   };
@@ -41,6 +43,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = () => {
     localStorage.removeItem('finix_token');
+    sessionStorage.removeItem('finix_token');
     setUser(null);
     window.location.href = '/';
   };

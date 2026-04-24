@@ -1,27 +1,17 @@
 import React from 'react';
-import { TrendingUp } from 'lucide-react';
 
 interface Props { size?: number; showText?: boolean; className?: string }
 
 export const Logo: React.FC<Props> = ({ size = 36, showText = true, className = '' }) => (
   <div className={`flex items-center gap-2.5 ${className}`} data-testid="finix-logo">
     <div
-      className="relative rounded-xl flex items-center justify-center shrink-0"
+      className="relative rounded-xl overflow-hidden shrink-0"
       style={{
         width: size, height: size,
-        background: 'linear-gradient(135deg, #2563EB 0%, #1E40AF 60%, #22C55E 100%)',
         boxShadow: '0 6px 20px -6px rgba(37, 99, 235, 0.55)',
       }}
     >
-      <span
-        className="text-white font-extrabold leading-none"
-        style={{ fontSize: size * 0.55, fontFamily: 'Poppins, Inter, sans-serif' }}
-      >F</span>
-      <TrendingUp
-        className="absolute text-[#86EFAC]"
-        style={{ right: -4, bottom: -4, width: size * 0.5, height: size * 0.5 }}
-        strokeWidth={3}
-      />
+      <img src="/logo.png" alt="Finix logo" className="w-full h-full object-cover" />
     </div>
     {showText && (
       <div className="flex flex-col leading-none">

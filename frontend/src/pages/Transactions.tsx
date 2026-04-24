@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   Plus, Search, Filter, Edit2, Trash2, X, Loader2, ArrowUpRight, ArrowDownRight, RefreshCw
 } from 'lucide-react';
@@ -8,7 +8,7 @@ import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
 import toast from 'react-hot-toast';
 import { api, apiErrorMessage } from '../services/api';
-import { Transaction } from '../types';
+import { Budget, Transaction } from '../types';
 import { currency, dateBR, CATEGORIES, dateISOForInput } from '../utils/format';
 
 const schema = yup.object({
@@ -20,6 +20,9 @@ const schema = yup.object({
   date: yup.string().required('Data obrigatória'),
   recurring: yup.boolean().default(false),
   recurringFrequency: yup.string().nullable().default(null),
+  paymentMethod: yup.string().oneOf(['credito', 'debito', 'pix']).default('pix'),
+  installments: yup.number().min(1).max(60).default(1),
+  currency: yup.string().oneOf(['BRL', 'USD', 'EUR', 'GBP']).default('BRL'),
 });
 type Form = yup.InferType<typeof schema>;
 
@@ -30,18 +33,21 @@ export default function Transactions() {
   const [q, setQ] = useState('');
   const [type, setType] = useState<'' | 'INCOME' | 'EXPENSE'>('');
   const [category, setCategory] = useState('');
+  const [budgets, setBudgets] = useState<Budget[]>([]);
 
-  const fetchData = async () => {
+  const fetchBudgets = async () => setBudgets((await api.get('/budgets')).data);
+
+  const fetchData = useCallback(async () => {
     const params: any = {};
     if (q) params.search = q;
     if (type) params.type = type;
     if (category) params.category = category;
     const r = await api.get('/transactions', { params });
     setItems(r.data);
-  };
+  }, [q, type, category]);
 
-  useEffect(() => { fetchData().catch(() => toast.error('Erro ao carregar')); /* eslint-disable-next-line */ }, [q, type, category]);
-
+  useEffect(() => { fetchData().catch(() => toast.error('Erro ao carregar')); }, [fetchData]);
+  useEffect(() => { fetchBudgets().catch(() => toast.error('Erro ao carregar orçamentos')); }, []);
   const openNew = () => { setEditing(null); setOpen(true); };
   const openEdit = (t: Transaction) => { setEditing(t); setOpen(true); };
 
@@ -112,11 +118,24 @@ export default function Transactions() {
                   <div className="font-semibold truncate flex items-center gap-2">
                     {t.title}
                     {t.recurring && <span className="chip bg-brand-purple/10 text-brand-purple !py-0.5 text-[10px]"><RefreshCw className="w-3 h-3" /> {t.recurringFrequency || 'recorrente'}</span>}
+                    {t.totalInstallments && t.totalInstallments > 1 && t.installmentNumber && (
+                      <span className="chip bg-blue-100 text-blue-600 !py-0.5 text-[10px]">
+                        Parcela {t.installmentNumber}/{t.totalInstallments}
+                      </span>
+                    )}
                   </div>
                   <div className="text-xs text-slate-500 flex items-center gap-2">
                     <span className="chip bg-slate-100 dark:bg-slate-700 !py-0.5 text-slate-600 dark:text-slate-300">{t.category}</span>
+                    <span className="chip bg-slate-100 dark:bg-slate-700 !py-0.5 text-slate-600 dark:text-slate-300">{t.paymentMethod || 'pix'}</span>
+                    {t.currency !== 'BRL' && <span className="chip bg-slate-100 dark:bg-slate-700 !py-0.5 text-slate-600 dark:text-slate-300">{t.currency}</span>}
                     {dateBR(t.date)}
                   </div>
+                  {t.totalInstallments && t.totalInstallments > 1 && t.installmentNumber && t.installmentNumber < t.totalInstallments && (
+                    <div className="text-xs text-amber-600 mt-1">
+                      Faltam {t.totalInstallments - t.installmentNumber} parcelas de {currency(t.amount, t.currency)} cada
+                      {t.totalAmount && ` (total: ${currency(t.totalAmount, t.currency)})`}
+                    </div>
+                  )}
                 </div>
                 <div className={`font-bold ${t.type === 'INCOME' ? 'text-emerald-600' : 'text-rose-600'}`}>
                   {t.type === 'INCOME' ? '+' : '-'}{currency(t.amount)}
@@ -140,8 +159,9 @@ export default function Transactions() {
           <TxModal
             key={editing?.id || 'new'}
             editing={editing}
+            budgets={budgets}
             onClose={() => setOpen(false)}
-            onSaved={() => { setOpen(false); fetchData(); }}
+            onSaved={() => { setOpen(false); fetchData(); fetchBudgets(); }}
           />
         )}
       </AnimatePresence>
@@ -149,25 +169,39 @@ export default function Transactions() {
   );
 }
 
-function TxModal({ editing, onClose, onSaved }: { editing: Transaction | null; onClose: () => void; onSaved: () => void }) {
-  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<Form>({
+function TxModal({ editing, onClose, onSaved, budgets }: { editing: Transaction | null; budgets: Budget[]; onClose: () => void; onSaved: () => void }) {
+  const { register, handleSubmit, watch, formState: { errors, isSubmitting } } = useForm<Form>({
     resolver: yupResolver(schema) as any,
     defaultValues: editing
       ? {
-          title: editing.title,
-          amount: editing.amount,
-          type: editing.type,
-          category: editing.category,
-          description: editing.description || '',
-          date: dateISOForInput(editing.date),
-          recurring: editing.recurring || false,
-          recurringFrequency: (editing.recurringFrequency as any) || null,
-        }
-      : { type: 'EXPENSE', category: 'Alimentação', date: dateISOForInput(), description: '', recurring: false, recurringFrequency: null } as any,
+        title: editing.title,
+        amount: editing.amount,
+        type: editing.type,
+        category: editing.category,
+        description: editing.description || '',
+        date: dateISOForInput(editing.date),
+        recurring: editing.recurring || false,
+        recurringFrequency: (editing.recurringFrequency as any) || null,
+        paymentMethod: editing.paymentMethod || 'pix',
+        installments: editing.installments || 1,
+        currency: editing.currency || 'BRL',
+      }
+      : { type: 'EXPENSE', category: 'Alimentação', date: dateISOForInput(), description: '', recurring: false, recurringFrequency: null, paymentMethod: 'pix', installments: 1, currency: 'BRL' } as any,
   });
 
   const recurring = (editing?.recurring) ?? false;
   const [isRec, setIsRec] = React.useState<boolean>(recurring);
+
+  const watchedCategory = watch('category');
+  const watchedAmount = Number(watch('amount') || 0);
+  const watchedPaymentMethod = watch('paymentMethod');
+  const watchedInstallments = Number(watch('installments') || 1);
+  const watchedCurrency = watch('currency') || 'BRL';
+  const selectedBudget = budgets.find((b) => b.category === watchedCategory);
+  const currentSpent = selectedBudget
+    ? selectedBudget.spent - (editing && editing.type === 'EXPENSE' && editing.category === selectedBudget.category ? editing.amount : 0)
+    : 0;
+  const overLimit = selectedBudget ? currentSpent + watchedAmount > selectedBudget.limit : false;
 
   const onSubmit = async (data: Form) => {
     try {
@@ -175,8 +209,20 @@ function TxModal({ editing, onClose, onSaved }: { editing: Transaction | null; o
         ...data,
         date: new Date(data.date).toISOString(),
         recurring: isRec,
-        recurringFrequency: isRec ? (data.recurringFrequency || 'monthly') : null,
       };
+      if (isRec) {
+        payload.recurringFrequency = data.recurringFrequency || 'monthly';
+      }
+
+      if (payload.type === 'EXPENSE' && selectedBudget) {
+        if (currentSpent + payload.amount > selectedBudget.limit) {
+          const confirmed = window.confirm(
+            `Você já chegou ao seu limite de ${currency(selectedBudget.limit)} para ${selectedBudget.category}. Tem certeza disso?`
+          );
+          if (!confirmed) return;
+        }
+      }
+
       if (editing) await api.put(`/transactions/${editing.id}`, payload);
       else await api.post('/transactions', payload);
       toast.success(editing ? 'Atualizado' : 'Criado');
@@ -231,8 +277,46 @@ function TxModal({ editing, onClose, onSaved }: { editing: Transaction | null; o
               <select {...register('category')} className="input mt-1" data-testid="tx-category">
                 {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
               </select>
+              {selectedBudget && (
+                <p className="text-xs mt-2 text-slate-500">
+                  Orçamento: {currency(selectedBudget.limit)} · Gasto atual: {currency(currentSpent)}
+                  {overLimit && ' · Ultrapassará o limite'}
+                </p>
+              )}
             </div>
           </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-sm font-medium">Método de Pagamento</label>
+              <select {...register('paymentMethod')} className="input mt-1" data-testid="tx-payment-method">
+                <option value="pix">PIX</option>
+                <option value="debito">Débito</option>
+                <option value="credito">Crédito</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-sm font-medium">Moeda</label>
+              <select {...register('currency')} className="input mt-1" data-testid="tx-currency">
+                <option value="BRL">Real (BRL)</option>
+                <option value="USD">Dólar (USD)</option>
+                <option value="EUR">Euro (EUR)</option>
+                <option value="GBP">Libra (GBP)</option>
+              </select>
+            </div>
+          </div>
+          {watchedPaymentMethod === 'credito' && (
+            <div>
+              <label className="text-sm font-medium">Parcelas</label>
+              <input type="number" min="1" max="60" {...register('installments')} className="input mt-1" data-testid="tx-installments" />
+              {errors.installments && <p className="text-xs text-red-500 mt-1">{errors.installments.message}</p>}
+            </div>
+          )}
+          {watchedPaymentMethod === 'credito' && watchedInstallments > 1 && (
+            <div>
+              <label className="text-sm font-medium">Valor Total</label>
+              <input type="text" value={currency(watchedAmount * watchedInstallments, watchedCurrency)} readOnly className="input mt-1 bg-slate-50 dark:bg-slate-800" />
+            </div>
+          )}
           <div className="rounded-xl bg-slate-50 dark:bg-slate-800 p-3">
             <label className="flex items-center gap-2 cursor-pointer">
               <input
@@ -260,6 +344,13 @@ function TxModal({ editing, onClose, onSaved }: { editing: Transaction | null; o
             <label className="text-sm font-medium">Descrição (opcional)</label>
             <textarea {...register('description')} rows={2} className="input mt-1" data-testid="tx-description" />
           </div>
+          {editing && watchedPaymentMethod === 'credito' && watchedInstallments > 1 && (
+            <div className="rounded-xl bg-amber-50 dark:bg-amber-900/20 p-3 border border-amber-200 dark:border-amber-800">
+              <p className="text-sm text-amber-700 dark:text-amber-300">
+                Faltam {watchedInstallments - 1} parcelas de {currency(watchedAmount / watchedInstallments, watchedCurrency)}
+              </p>
+            </div>
+          )}
           <div className="flex justify-end gap-2 pt-2">
             <button type="button" onClick={onClose} className="btn-outline">Cancelar</button>
             <button type="submit" className="btn-primary" disabled={isSubmitting} data-testid="tx-save">

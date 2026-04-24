@@ -1,5 +1,11 @@
-export function currency(v: number) {
-  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v || 0);
+export function currency(v: number, curr: string = 'BRL') {
+  const currencyMap: Record<string, string> = {
+    'BRL': 'BRL',
+    'USD': 'USD',
+    'EUR': 'EUR',
+    'GBP': 'GBP',
+  };
+  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: currencyMap[curr] || 'BRL' }).format(v || 0);
 }
 
 export function dateBR(iso: string) {

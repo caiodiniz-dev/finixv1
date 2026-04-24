@@ -38,6 +38,13 @@ function PublicOnly({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+function Home() {
+  const { user } = useAuth();
+  if (user === undefined) return <FullScreenLoader />;
+  if (user) return <Navigate to="/app/dashboard" replace />;
+  return <Landing />;
+}
+
 export default function App() {
   return (
     <AuthProvider>
@@ -47,7 +54,7 @@ export default function App() {
           success: { iconTheme: { primary: '#22C55E', secondary: 'white' } },
         }} />
         <Routes>
-          <Route path="/" element={<Landing />} />
+          <Route path="/" element={<Home />} />
           <Route path="/login" element={<PublicOnly><Login /></PublicOnly>} />
           <Route path="/register" element={<PublicOnly><Register /></PublicOnly>} />
           <Route path="/app" element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>

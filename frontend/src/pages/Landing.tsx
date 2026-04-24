@@ -3,8 +3,8 @@ import { Link } from 'react-router-dom';
 import { motion, useScroll, useTransform, useInView, AnimatePresence } from 'framer-motion';
 import {
   ArrowRight, CheckCircle2, PieChart, Target, Shield, Zap, TrendingUp, BarChart3, Sparkles,
-  Wallet, FileDown, RefreshCw, Brain, LineChart, Users, Star, Quote, ChevronRight, Play,
-  ShieldCheck, Lock, Clock, MousePointer2
+  Wallet, FileDown, RefreshCw, Brain, LineChart, Users, Star, Quote, ChevronRight, ChevronLeft, Play,
+  ShieldCheck, Lock, Clock, MousePointer2, PiggyBank
 } from 'lucide-react';
 import { Logo } from '../components/Logo';
 
@@ -42,6 +42,15 @@ export default function Landing() {
   const { scrollYProgress } = useScroll();
   const heroY = useTransform(scrollYProgress, [0, 0.3], [0, -60]);
   const heroOpacity = useTransform(scrollYProgress, [0, 0.35], [1, 0.2]);
+
+  const features = [
+    { icon: BarChart3, title: 'Dashboard Inteligente', desc: 'Gráficos em tempo real com uma visão completa de suas finanças.', gradient: 'from-brand-blue to-cyan-500' },
+    { icon: Brain, title: 'Insights com IA real', desc: 'Recomendações personalizadas para economizar mais e gastar melhor.', gradient: 'from-brand-purple to-pink-500' },
+    { icon: Target, title: 'Metas Visuais', desc: 'Acompanhe seu progresso e transforme objetivos em resultados.', gradient: 'from-brand-green to-emerald-500' },
+    { icon: Wallet, title: 'Orçamentos por categoria', desc: 'Defina limites e receba alertas antes de ultrapassar seus gastos.', gradient: 'from-amber-500 to-orange-500' },
+    { icon: RefreshCw, title: 'Recorrências', desc: 'Automatize despesas mensais e saiba exatamente quando vai sair.', gradient: 'from-cyan-500 to-brand-blue' },
+    { icon: FileDown, title: 'Exportação simples', desc: 'Relatórios bonitos em PDF e Excel com apenas um clique.', gradient: 'from-rose-500 to-pink-500' },
+  ];
 
   return (
     <div className="min-h-screen bg-white overflow-x-hidden">
@@ -102,7 +111,7 @@ export default function Landing() {
               transition={{ duration: 0.5 }}
               className="chip bg-gradient-to-r from-brand-blue/10 to-brand-purple/10 text-brand-blue mb-5 border border-brand-blue/20 backdrop-blur"
             >
-              <Sparkles className="w-3.5 h-3.5" /> Agora com IA · Claude Sonnet 4.5
+              <Sparkles className="w-3.5 h-3.5" /> Implantado Com I.A.
             </motion.div>
             <motion.h1
               initial={{ opacity: 0, y: 16 }}
@@ -112,7 +121,7 @@ export default function Landing() {
             >
               Controle suas finanças como um{' '}
               <span className="relative inline-block">
-                <span className="bg-gradient-to-r from-brand-blue via-brand-purple to-brand-green bg-clip-text text-transparent">PRO</span>
+                <span className="bg-gradient-to-r from-brand-blue via-brand-purple to-brand-green bg-clip-text text-transparent">PROFISSIONAL</span>
                 <motion.span
                   initial={{ width: 0 }} animate={{ width: '100%' }} transition={{ delay: 0.8, duration: 0.6 }}
                   className="absolute -bottom-1 left-0 h-1 bg-gradient-to-r from-brand-blue via-brand-purple to-brand-green rounded-full"
@@ -148,19 +157,19 @@ export default function Landing() {
             </motion.div>
 
             {/* Avatars social proof */}
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="mt-10 flex items-center gap-4">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.65 }} className="mt-10 flex items-center gap-4">
               <div className="flex -space-x-2">
-                {['#F59E0B', '#2563EB', '#7C3AED', '#22C55E', '#EC4899'].map((c, i) => (
+                {['#F59E0B', '#2563EB', '#7C3AED', '#22C55E', '#EC4899', '#FB7185', '#F97316'].map((c, i) => (
                   <div key={i} className="w-9 h-9 rounded-full ring-2 ring-white flex items-center justify-center text-white font-bold text-xs" style={{ background: c }}>
-                    {['R','M','A','L','C'][i]}
+                    {['R', 'M', 'A', 'L', 'C', 'S', 'P'][i]}
                   </div>
                 ))}
               </div>
               <div className="text-sm">
                 <div className="flex items-center gap-1 text-amber-500">
-                  {[1,2,3,4,5].map(i => <Star key={i} className="w-3.5 h-3.5 fill-current" />)}
+                  {[1, 2, 3, 4, 5].map(i => <Star key={i} className="w-3.5 h-3.5 fill-current" />)}
                 </div>
-                <p className="text-slate-600 font-medium">+4.000 pessoas no controle</p>
+                <p className="text-slate-600 font-medium">Muitas pessoas no controle</p>
               </div>
             </motion.div>
           </div>
@@ -173,10 +182,10 @@ export default function Landing() {
       {/* Counters strip */}
       <section className="border-y border-slate-100 bg-white">
         <div className="max-w-7xl mx-auto px-6 py-12 grid grid-cols-2 md:grid-cols-4 gap-6">
-          <StatCounter value={4230} label="Usuários ativos" />
-          <StatCounter value={128000} label="Transações gerenciadas" suffix="+" />
-          <StatCounter value={98} label="Satisfação" suffix="%" />
-          <StatCounter value={25} label="Categorias prontas" suffix="+" />
+          <StatCounter value={100} label="Controle total das suas finanças" suffix="%" />
+          <StatCounter value={100} label="Visualização clara dos seus gastos" suffix="%" />
+          <StatCounter value={100} label="Acompanhe suas metas em tempo real" suffix="%" />
+          <StatCounter value={100} label="nterface rápida e simples" suffix="%" />
         </div>
       </section>
 
@@ -193,35 +202,23 @@ export default function Landing() {
             </h2>
             <p className="mt-4 text-slate-600 text-lg">Um painel premium com as ferramentas certas — sem complicação.</p>
           </motion.div>
-          <div className="mt-16 grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[
-              { icon: BarChart3, title: 'Dashboard Inteligente', desc: 'Gráficos de área, pizza e barras em tempo real com dados dos últimos 6 meses.', gradient: 'from-brand-blue to-cyan-500' },
-              { icon: Brain, title: 'Insights com IA real', desc: 'Claude Sonnet 4.5 analisa seus gastos e dá conselhos personalizados em segundos.', gradient: 'from-brand-purple to-pink-500' },
-              { icon: Target, title: 'Metas Visuais', desc: 'Acompanhe o progresso com barras animadas e previsão de conclusão automática.', gradient: 'from-brand-green to-emerald-500' },
-              { icon: Wallet, title: 'Orçamentos por categoria', desc: 'Defina limites mensais e receba alertas quando ultrapassar 80% ou 100%.', gradient: 'from-amber-500 to-orange-500' },
-              { icon: RefreshCw, title: 'Recorrências', desc: 'Marque transações como mensais, semanais ou anuais. Salário, aluguel, assinaturas.', gradient: 'from-cyan-500 to-brand-blue' },
-              { icon: FileDown, title: 'Exportação', desc: 'Baixe relatórios em PDF estilizado ou Excel com 1 clique.', gradient: 'from-rose-500 to-pink-500' },
-              { icon: Shield, title: 'Painel Admin', desc: 'Gestão completa de usuários, roles, bloqueio e estatísticas globais.', gradient: 'from-slate-700 to-slate-900' },
-              { icon: Lock, title: 'Segurança Premium', desc: 'Senha com bcrypt, JWT stateless, dados por usuário. Zero trust.', gradient: 'from-red-500 to-rose-600' },
-              { icon: Zap, title: 'Dark Mode', desc: 'Alterne entre claro e escuro com 1 clique. Interface 100% responsiva.', gradient: 'from-violet-500 to-brand-purple' },
-            ].map((f, i) => (
-              <motion.div
-                key={f.title}
-                initial={{ opacity: 0, y: 16 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.05 }}
-                whileHover={{ y: -6 }}
-                className="group relative card hover:shadow-glow transition-all"
-              >
-                <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${f.gradient} flex items-center justify-center text-white mb-4 group-hover:scale-110 transition-transform shadow-md`}>
-                  <f.icon className="w-5 h-5" />
+          <div className="mt-16 overflow-hidden">
+            <motion.div
+              initial={{ x: 0 }}
+              animate={{ x: ['0%', '-50%'] }}
+              transition={{ duration: 8, ease: 'linear', repeat: Infinity }}
+              className="flex gap-6"
+            >
+              {[...features, ...features].map((f, index) => (
+                <div key={`${f.title}-${index}`} className="group relative card hover:shadow-glow transition-all min-w-[22rem] flex-shrink-0">
+                  <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${f.gradient} flex items-center justify-center text-white mb-4 group-hover:scale-110 transition-transform shadow-md`}>
+                    <f.icon className="w-5 h-5" />
+                  </div>
+                  <h3 className="font-display font-bold text-lg">{f.title}</h3>
+                  <p className="text-slate-600 mt-2 text-sm leading-relaxed">{f.desc}</p>
                 </div>
-                <h3 className="font-display font-bold text-lg">{f.title}</h3>
-                <p className="text-slate-600 mt-2 text-sm leading-relaxed">{f.desc}</p>
-                <ChevronRight className="absolute bottom-5 right-5 w-5 h-5 text-slate-300 group-hover:text-brand-blue group-hover:translate-x-1 transition-all" />
-              </motion.div>
-            ))}
+              ))}
+            </motion.div>
           </div>
         </div>
       </section>
@@ -270,96 +267,211 @@ export default function Landing() {
         <div className="max-w-7xl mx-auto px-6">
           <motion.div
             initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
-            className="text-center max-w-2xl mx-auto mb-16"
+            className="text-center max-w-2xl mx-auto mb-12"
           >
             <div className="chip bg-amber-100 text-amber-700 mb-3 mx-auto border border-amber-200">Depoimentos</div>
             <h2 className="text-3xl sm:text-5xl font-display font-extrabold tracking-tight">Pessoas que <span className="text-brand-green">economizaram de verdade</span></h2>
           </motion.div>
-          <div className="grid md:grid-cols-3 gap-6">
-            {[
-              { name: 'Rafael Mendes', role: 'Designer · SP', text: 'O Finix mudou meu jogo. Em 3 meses economizei R$ 4.200 só descobrindo para onde meu dinheiro ia.', color: '#2563EB' },
-              { name: 'Marina Costa', role: 'Engenheira · RJ', text: 'A análise da IA foi impressionante. Identificou que eu gastava demais com delivery e me ajudou a cortar 40%.', color: '#7C3AED' },
-              { name: 'Lucas Almeida', role: 'Dev · BH', text: 'Finalmente um app de finanças bonito e rápido. Os gráficos e as metas me mantêm motivado todo mês.', color: '#22C55E' },
-            ].map((t, i) => (
-              <motion.div
-                key={t.name}
-                initial={{ opacity: 0, y: 12 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
-                transition={{ delay: i * 0.1 }}
-                className="card relative"
-              >
-                <Quote className="absolute top-5 right-5 w-8 h-8 text-slate-100" />
-                <div className="flex items-center gap-1 text-amber-500 mb-3">
-                  {[1,2,3,4,5].map(s => <Star key={s} className="w-4 h-4 fill-current" />)}
-                </div>
-                <p className="text-slate-700 leading-relaxed">"{t.text}"</p>
-                <div className="mt-5 flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold" style={{ background: t.color }}>
-                    {t.name.charAt(0)}
-                  </div>
-                  <div>
-                    <div className="font-semibold">{t.name}</div>
-                    <div className="text-xs text-slate-500">{t.role}</div>
-                  </div>
-                </div>
-              </motion.div>
-            ))}
-          </div>
+
+          <TestimonialCarousel />
         </div>
       </section>
 
       {/* Pricing */}
       <section id="pricing" className="py-24 bg-slate-50">
-        <div className="max-w-4xl mx-auto px-6 text-center">
-          <motion.div initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
+        <div className="max-w-7xl mx-auto px-6">
+          <motion.div initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center mb-12">
             <div className="chip bg-brand-blue/10 text-brand-blue mb-3 mx-auto border border-brand-blue/20">Preço</div>
             <h2 className="text-3xl sm:text-5xl font-display font-extrabold tracking-tight">Grátis durante o lançamento</h2>
             <p className="mt-3 text-slate-600 text-lg">Todos os recursos sem limite. Para sempre na versão beta.</p>
           </motion.div>
-          <motion.div
-            initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
-            whileHover={{ y: -4 }}
-            className="relative mt-10 card max-w-md mx-auto hover:shadow-glow transition-all"
-          >
-            <div className="chip bg-gradient-to-r from-brand-blue to-brand-purple text-white mx-auto mb-2">MAIS POPULAR</div>
-            <div className="text-5xl font-display font-extrabold mt-4">R$ 0</div>
-            <div className="text-slate-500 text-sm">/mês · enquanto durar o beta</div>
-            <ul className="mt-6 space-y-3 text-left">
-              {['Transações ilimitadas', 'Insights por IA', 'Orçamentos e metas', 'Exportação PDF + Excel', 'Suporte por e-mail'].map(f => (
-                <li key={f} className="flex items-center gap-2 text-sm"><CheckCircle2 className="w-4 h-4 text-brand-green" /> {f}</li>
-              ))}
-            </ul>
-            <Link to="/register" className="btn-primary w-full mt-8 !py-3" data-testid="pricing-cta">
-              Começar grátis <ArrowRight className="w-4 h-4" />
-            </Link>
-          </motion.div>
+
+          <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto items-center">
+            {/* Plano Grátis */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
+              whileHover={{ y: -4 }}
+              className="relative card hover:shadow-glow transition-all rounded-2xl border-2 border-emerald-200 bg-gradient-to-br from-emerald-50 to-green-50 h-full"
+            >
+              <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-brand-green mx-auto mb-4">
+                <Sparkles className="w-6 h-6 text-white" />
+              </div>
+              <h3 className="text-xl font-display font-bold text-center">Grátis</h3>
+              <div className="text-4xl font-display font-extrabold text-center mt-4">R$ 0</div>
+              <div className="text-slate-600 text-sm text-center mt-2">Para sempre</div>
+              <ul className="mt-8 space-y-3 text-left">
+                {['Até 100 transações/mês', 'Dashboard básico', '3 categorias', 'Gráficos simples', 'Sem IA'].map(f => (
+                  <li key={f} className="flex items-center gap-2 text-sm">
+                    <CheckCircle2 className="w-4 h-4 text-brand-green" />
+                    {f}
+                  </li>
+                ))}
+              </ul>
+              <Link to="/register" className="w-full mt-8 inline-flex items-center justify-center gap-2 py-3 px-6 bg-brand-green text-white rounded-xl font-semibold hover:shadow-lg transition-all">
+                Iniciar <ArrowRight className="w-4 h-4" />
+              </Link>
+            </motion.div>
+
+            {/* Plano Pro - DESTAQUE NO MEIO */}
+            <motion.div
+              initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
+              whileHover={{ y: -8 }}
+              className="relative card hover:shadow-glow transition-all rounded-2xl border-2 border-brand-purple bg-gradient-to-br from-blue-50 via-purple-50 to-purple-100 scale-105 shadow-2xl h-full md:col-span-1"
+            >
+              <div className="absolute -top-4 left-1/2 -translate-x-1/2">
+                <span className="bg-gradient-to-r from-brand-blue to-brand-purple text-white px-5 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider">✨ MAIS POPULAR</span>
+              </div>
+              <div className="flex items-center justify-center w-14 h-14 rounded-xl bg-gradient-to-br from-brand-blue to-brand-purple mx-auto mb-4">
+                <PiggyBank className="w-7 h-7 text-white" />
+              </div>
+              <h3 className="text-2xl font-display font-bold text-center">Plano Pro</h3>
+              <div className="text-5xl font-display font-extrabold text-center mt-4">R$ 35</div>
+              <div className="text-slate-600 text-sm text-center mt-2">/mês</div>
+              <ul className="mt-8 space-y-3 text-left">
+                {['Transações ilimitadas', 'Dashboard completo', 'Análise com IA avançada', 'Exportação PDF + Excel', 'Metas ilimitadas', 'Suporte prioritário'].map(f => (
+                  <li key={f} className="flex items-center gap-2 text-sm font-medium">
+                    <CheckCircle2 className="w-4 h-4 text-brand-blue" />
+                    {f}
+                  </li>
+                ))}
+              </ul>
+              <a
+                href="https://wa.me/19994737425?text=Olá,%20gostaria%20de%20assinar%20o%20Plano%20Pro%20do%20Finix"
+                target="_blank"
+                rel="noreferrer"
+                className="w-full mt-8 inline-flex items-center justify-center gap-2 py-3 px-6 bg-gradient-to-r from-brand-blue to-brand-purple text-white rounded-xl font-bold hover:shadow-2xl transition-all hover:scale-105"
+              >
+                Assinar agora <ArrowRight className="w-4 h-4" />
+              </a>
+            </motion.div>
+
+            {/* Plano Básico */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
+              transition={{ delay: 0.1 }}
+              whileHover={{ y: -4 }}
+              className="relative card hover:shadow-glow transition-all rounded-2xl border-2 border-slate-200 bg-white h-full"
+            >
+              <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-slate-100 mx-auto mb-4">
+                <Wallet className="w-6 h-6 text-slate-600" />
+              </div>
+              <h3 className="text-xl font-display font-bold text-center">Plano Básico</h3>
+              <div className="text-4xl font-display font-extrabold text-center mt-4">R$ 10</div>
+              <div className="text-slate-600 text-sm text-center mt-2">/mês</div>
+              <ul className="mt-8 space-y-3 text-left">
+                {['Até 500 transações/mês', 'Dashboard completo', 'Análise com IA', 'Exportação PDF', 'Até 5 metas'].map(f => (
+                  <li key={f} className="flex items-center gap-2 text-sm">
+                    <CheckCircle2 className="w-4 h-4 text-amber-500" />
+                    {f}
+                  </li>
+                ))}
+              </ul>
+              <a
+                href="https://wa.me/19994737425?text=Olá,%20gostaria%20de%20assinar%20o%20Plano%20Básico%20do%20Finix"
+                target="_blank"
+                rel="noreferrer"
+                className="w-full mt-8 inline-flex items-center justify-center gap-2 py-3 px-6 bg-gradient-to-r from-brand-blue to-brand-purple text-white rounded-xl font-semibold hover:shadow-lg transition-all"
+              >
+                Assinar agora <ArrowRight className="w-4 h-4" />
+              </a>
+            </motion.div>
+          </div>
         </div>
       </section>
 
       {/* Big CTA */}
-      <section className="py-24">
-        <div className="max-w-5xl mx-auto px-6">
+      <section className="py-24 bg-gradient-to-b from-white to-slate-50">
+        <div className="max-w-6xl mx-auto px-6">
           <motion.div
-            initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
-            className="relative rounded-3xl overflow-hidden p-12 sm:p-16 text-center text-white"
+            initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
+            className="relative rounded-3xl overflow-hidden p-8 sm:p-16 text-white grid md:grid-cols-2 gap-12 items-center"
             style={{ background: 'linear-gradient(135deg, #2563EB 0%, #7C3AED 50%, #22C55E 120%)' }}
           >
+            {/* Left: Text */}
+            <motion.div initial={{ opacity: 0, x: -30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ delay: 0.1 }}>
+              <h2 className="text-4xl sm:text-5xl font-display font-extrabold leading-tight">
+                Pare de perder dinheiro sem perceber.
+              </h2>
+              <p className="mt-6 text-white/90 text-lg leading-relaxed">
+                Transforme seus gastos em resultados reais hoje mesmo — comece em menos de 1 minuto.
+              </p>
+              <Link to="/register" className="mt-8 inline-flex items-center gap-2 px-7 py-4 rounded-xl font-bold bg-white text-brand-dark hover:bg-slate-100 hover:scale-105 transition text-base shadow-lg" data-testid="cta-register">
+                Começar grátis <ArrowRight className="w-5 h-5" />
+              </Link>
+              <div className="mt-4 text-sm text-white/70 flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4" /> Sem cartão de crédito necessário
+              </div>
+            </motion.div>
+
+            {/* Right: Chart with green arrow */}
             <motion.div
-              className="absolute inset-0 opacity-20"
-              animate={{ backgroundPosition: ['0% 0%', '100% 100%'] }}
-              transition={{ duration: 12, repeat: Infinity, repeatType: 'reverse' }}
-              style={{
-                backgroundImage: "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'><circle cx='60' cy='60' r='1.5' fill='white'/></svg>\")",
-                backgroundSize: '60px 60px',
-              }}
-            />
-            <h2 className="relative text-3xl sm:text-5xl font-display font-extrabold">Pare de perder dinheiro sem perceber.</h2>
-            <p className="relative mt-4 text-white/90 max-w-xl mx-auto text-lg">Transforme seus gastos em resultados hoje mesmo. Leva menos de 1 minuto.</p>
-            <Link to="/register" className="relative mt-8 inline-flex items-center gap-2 px-8 py-4 rounded-xl font-bold bg-white text-brand-dark hover:bg-slate-100 hover:scale-105 transition text-base" data-testid="cta-register">
-              Começar grátis <ArrowRight className="w-5 h-5" />
-            </Link>
-            <div className="relative mt-4 text-xs text-white/70 flex items-center justify-center gap-2">
-              <MousePointer2 className="w-3 h-3" /> Nenhuma informação de pagamento necessária
-            </div>
+              initial={{ opacity: 0, x: 30, scale: 0.9 }}
+              whileInView={{ opacity: 1, x: 0, scale: 1 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.2 }}
+              className="relative"
+            >
+              <svg viewBox="0 0 200 200" className="w-full h-auto max-w-xs">
+                {/* Grid background */}
+                <g stroke="rgba(255,255,255,0.1)" strokeWidth="1">
+                  <line x1="0" y1="40" x2="200" y2="40" />
+                  <line x1="0" y1="80" x2="200" y2="80" />
+                  <line x1="0" y1="120" x2="200" y2="120" />
+                  <line x1="0" y1="160" x2="200" y2="160" />
+                  <line x1="40" y1="0" x2="40" y2="200" />
+                  <line x1="80" y1="0" x2="80" y2="200" />
+                  <line x1="120" y1="0" x2="120" y2="200" />
+                  <line x1="160" y1="0" x2="160" y2="200" />
+                </g>
+
+                {/* Chart area */}
+                <polyline
+                  points="20,160 60,120 100,100 140,60 180,20"
+                  fill="none"
+                  stroke="#22C55E"
+                  strokeWidth="3"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+
+                {/* Area under curve */}
+                <polygon
+                  points="20,160 60,120 100,100 140,60 180,20 180,200 20,200"
+                  fill="rgba(34, 197, 94, 0.2)"
+                />
+
+                {/* Data points */}
+                {[
+                  { cx: 20, cy: 160 },
+                  { cx: 60, cy: 120 },
+                  { cx: 100, cy: 100 },
+                  { cx: 140, cy: 60 },
+                  { cx: 180, cy: 20 },
+                ].map((point, i) => (
+                  <circle
+                    key={i}
+                    cx={point.cx}
+                    cy={point.cy}
+                    r="4"
+                    fill="#22C55E"
+                  />
+                ))}
+
+                {/* Arrow at top */}
+                <g>
+                  <line x1="190" y1="25" x2="190" y2="0" stroke="#22C55E" strokeWidth="3" strokeLinecap="round" />
+                  <polyline points="185,10 190,0 195,10" fill="none" stroke="#22C55E" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                </g>
+              </svg>
+
+              <motion.div
+                animate={{ y: [0, -10, 0] }}
+                transition={{ duration: 3, repeat: Infinity }}
+                className="absolute -top-6 -right-6 bg-white/95 backdrop-blur rounded-xl p-3 shadow-xl text-brand-dark text-xs font-bold"
+              >
+                +18% este mês ↑
+              </motion.div>
+            </motion.div>
           </motion.div>
         </div>
       </section>
@@ -368,7 +480,7 @@ export default function Landing() {
         <div className="max-w-7xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
           <Logo size={32} />
           <div className="text-sm text-slate-500 text-center sm:text-right">
-            © {new Date().getFullYear()} Finix · Suas finanças, seu futuro. Feito com 💙 no Brasil.
+            © 2026 Finix · Suas finanças, seu futuro. Feito com 💙 <a href="https://caiodiniz.dev.br" target="_blank" rel="noreferrer" className="text-brand-blue hover:underline">Caio Diniz</a>
           </div>
         </div>
       </footer>
@@ -377,6 +489,101 @@ export default function Landing() {
 }
 
 /* ===== Visual components (animated mockups) ===== */
+
+function TestimonialCarousel() {
+  const testimonials = [
+    {
+      name: 'Rafael Mendes',
+      role: 'Designer · SP',
+      text: 'O Finix mudou meu jogo. Em 3 meses economizei R$ 4.200 só descobrindo para onde meu dinheiro ia.',
+      color: '#2563EB',
+    },
+    {
+      name: 'Marina Costa',
+      role: 'Engenheira · RJ',
+      text: 'A análise da IA foi impressionante. Identificou que eu gastava demais com delivery e me ajudou a cortar 40%.',
+      color: '#7C3AED',
+    },
+    {
+      name: 'Lucas Almeida',
+      role: 'Dev · BH',
+      text: 'Finalmente um app de finanças bonito e rápido. Os gráficos e as metas me mantêm motivado todo mês.',
+      color: '#22C55E',
+    },
+    {
+      name: 'Patrícia Soares',
+      role: 'Empreendedora · RJ',
+      text: 'A exportação em PDF e Excel salvou o meu relatório mensal e facilitou a apresentação ao meu contador.',
+      color: '#F97316',
+    },
+    {
+      name: 'Guilherme Rocha',
+      role: 'Consultor · SP',
+      text: 'O recurso de metas me fez economizar para uma viagem em apenas 4 meses. Recomendo demais.',
+      color: '#EC4899',
+    },
+  ];
+
+  const [current, setCurrent] = useState(0);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setCurrent((prev) => (prev + 1) % testimonials.length);
+    }, 4500);
+    return () => window.clearInterval(timer);
+  }, [testimonials.length]);
+
+  const prev = () => setCurrent((prev) => (prev - 1 + testimonials.length) % testimonials.length);
+  const next = () => setCurrent((prev) => (prev + 1) % testimonials.length);
+
+  return (
+    <div className="relative max-w-4xl mx-auto">
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={testimonials[current].name}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -20 }}
+          transition={{ duration: 0.45 }}
+          className="card p-8 shadow-xl"
+        >
+          <Quote className="absolute top-6 right-6 w-10 h-10 text-slate-100 opacity-20" />
+          <div className="flex items-center gap-2 text-amber-500 mb-4">
+            {[1, 2, 3, 4, 5].map((star) => <Star key={star} className="w-4 h-4 fill-current" />)}
+          </div>
+          <p className="text-lg sm:text-xl text-slate-700 leading-relaxed">"{testimonials[current].text}"</p>
+          <div className="mt-8 flex items-center gap-4">
+            <div className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-base" style={{ background: testimonials[current].color }}>
+              {testimonials[current].name.charAt(0)}
+            </div>
+            <div>
+              <div className="font-semibold text-slate-900">{testimonials[current].name}</div>
+              <div className="text-sm text-slate-500">{testimonials[current].role}</div>
+            </div>
+          </div>
+        </motion.div>
+      </AnimatePresence>
+      <div className="mt-8 flex items-center justify-between gap-3 text-slate-500">
+        <button onClick={prev} className="btn-outline inline-flex items-center gap-2 px-4 py-2 rounded-full">
+          <ChevronLeft className="w-4 h-4" /> Anterior
+        </button>
+        <div className="flex items-center gap-2">
+          {testimonials.map((_, index) => (
+            <button
+              key={index}
+              onClick={() => setCurrent(index)}
+              className={`w-3 h-3 rounded-full ${index === current ? 'bg-brand-green' : 'bg-slate-300'}`}
+              aria-label={`Depoimento ${index + 1}`}
+            />
+          ))}
+        </div>
+        <button onClick={next} className="btn-outline inline-flex items-center gap-2 px-4 py-2 rounded-full">
+          Próximo <ChevronRight className="w-4 h-4" />
+        </button>
+      </div>
+    </div>
+  );
+}
 
 function HeroDashboard() {
   const bars = [40, 62, 50, 78, 55, 84, 70, 92, 66, 88, 75, 95];

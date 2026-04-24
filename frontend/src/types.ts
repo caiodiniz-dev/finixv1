@@ -5,6 +5,7 @@ export interface User {
   role: 'USER' | 'ADMIN';
   blocked: boolean;
   createdAt: string;
+  photo?: string;
 }
 
 export interface Transaction {
@@ -18,6 +19,12 @@ export interface Transaction {
   date: string;
   recurring?: boolean;
   recurringFrequency?: 'monthly' | 'weekly' | 'yearly' | null;
+  paymentMethod?: 'credito' | 'debito' | 'pix';
+  installments?: number;
+  installmentNumber?: number;
+  totalInstallments?: number;
+  totalAmount?: number;
+  currency?: 'BRL' | 'USD' | 'EUR' | 'GBP';
   createdAt: string;
 }
 

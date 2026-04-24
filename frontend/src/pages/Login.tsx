@@ -19,11 +19,12 @@ export default function Login() {
   const { login } = useAuth();
   const nav = useNavigate();
   const [show, setShow] = useState(false);
+  const [remember, setRemember] = useState(true);
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<Form>({ resolver: yupResolver(schema) });
 
   const onSubmit = async (data: Form) => {
     try {
-      await login(data.email, data.password);
+      await login(data.email, data.password, remember);
       toast.success('Bem-vindo de volta!');
       nav('/app/dashboard');
     } catch (e: any) {
@@ -107,15 +108,23 @@ export default function Login() {
               {errors.password && <p className="text-xs text-red-500 mt-1">{errors.password.message}</p>}
             </div>
 
+            <div className="flex items-center gap-3 text-sm text-slate-700">
+              <input
+                id="remember"
+                type="checkbox"
+                checked={remember}
+                onChange={() => setRemember((prev) => !prev)}
+                className="h-4 w-4 rounded border-slate-300 text-brand-blue focus:ring-brand-blue"
+              />
+              <label htmlFor="remember" className="select-none">Lembre-se de mim</label>
+            </div>
+
             <button type="submit" className="btn-primary w-full !py-3" disabled={isSubmitting} data-testid="login-submit">
               {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <>Entrar <ArrowRight className="w-4 h-4" /></>}
             </button>
           </form>
 
           <div className="mt-6 p-4 rounded-xl bg-slate-50 border border-slate-100 text-xs text-slate-600">
-            <div className="font-semibold text-slate-700 mb-1">Contas de demonstração:</div>
-            <div>Admin: <code>admin@finix.com</code> / <code>Admin@123</code></div>
-            <div>Usuário: <code>demo@finix.com</code> / <code>Demo@123</code></div>
           </div>
 
           <p className="mt-6 text-sm text-slate-600 text-center">
