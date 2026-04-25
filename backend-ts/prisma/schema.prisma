@@ -11,18 +11,26 @@ datasource db {
 }
 
 model User {
-  id           String   @id @default(uuid())
-  name         String
-  email        String   @unique
-  passwordHash String
-  role         String   @default("USER")
-  blocked      Boolean  @default(false)
-  photo        String? // Base64 or URL for profile picture
-  createdAt    DateTime @default(now())
+  id                   String   @id @default(uuid())
+  name                 String
+  email                String   @unique
+  passwordHash         String
+  role                 String   @default("USER")
+  blocked              Boolean  @default(false)
+  photo                String?
+  plan                 String   @default("FREE") // FREE | BASIC | PRO
+  stripeCustomerId     String?
+  stripeSubscriptionId String?
+  transactionsUsed     Int      @default(0)
+  transactionsMonth    String   @default("") // YYYY-MM for monthly reset
+  planExpiresAt        DateTime?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @default(now()) @updatedAt
 
-  transactions Transaction[]
-  goals        Goal[]
-  budgets      Budget[]
+  transactions         Transaction[]
+  goals                Goal[]
+  budgets              Budget[]
+  paymentTransactions  PaymentTransaction[]
 
   @@map("users")
 }
@@ -40,9 +48,9 @@ model Transaction {
   recurringFrequency String?
   paymentMethod      String?  @default("pix")
   installments       Int      @default(1)
-  installmentNumber  Int? // Current installment number (1, 2, 3, etc.)
-  totalInstallments  Int? // Total number of installments
-  totalAmount        Float? // Total amount for installments (amount * installments)
+  installmentNumber  Int?
+  totalInstallments  Int?
+  totalAmount        Float?
   currency           String   @default("BRL")
   createdAt          DateTime @default(now())
 
@@ -76,4 +84,24 @@ model Budget {
 
   @@unique([userId, category])
   @@map("budgets")
+}
+
+model PaymentTransaction {
+  id              String   @id @default(uuid())
+  userId          String?
+  userEmail       String?
+  sessionId       String   @unique
+  amount          Float
+  currency        String   @default("brl")
+  plan            String   // basic | pro
+  paymentStatus   String   @default("pending") // pending | paid | failed | expired
+  status          String   @default("initiated")
+  stripePaymentId String?
+  metadata        String?  // JSON string
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @default(now()) @updatedAt
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@map("payment_transactions")
 }

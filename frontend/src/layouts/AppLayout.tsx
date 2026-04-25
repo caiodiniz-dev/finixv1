@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link, NavLink, useNavigate, Outlet } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
-  LayoutDashboard, ArrowLeftRight, Target, Shield, LogOut, Menu, X, Download, Sun, Moon, Wallet, User as UserIcon
+  LayoutDashboard, ArrowLeftRight, Target, Shield, LogOut, Menu, X, Download, Sun, Moon, Wallet, User as UserIcon, Crown
 } from 'lucide-react';
 import { Logo } from '../components/Logo';
 import { useAuth } from '../contexts/AuthContext';
@@ -25,6 +25,7 @@ export default function AppLayout() {
     { to: '/app/transactions', icon: ArrowLeftRight, label: 'Transações', testid: 'nav-transactions' },
     { to: '/app/budgets', icon: Wallet, label: 'Orçamentos', testid: 'nav-budgets' },
     { to: '/app/goals', icon: Target, label: 'Metas', testid: 'nav-goals' },
+    { to: '/app/plans', icon: Crown, label: 'Planos', testid: 'nav-plans' },
     { to: '/app/profile', icon: UserIcon, label: 'Perfil', testid: 'nav-profile' },
   ];
   if (user.role === 'ADMIN') {
@@ -66,6 +67,20 @@ export default function AppLayout() {
           <div className="min-w-0">
             <div className="text-sm font-semibold truncate">{user.name}</div>
             <div className="text-xs text-slate-500 truncate">{user.email}</div>
+            {user.plan && (
+              <div className="mt-1">
+                <span
+                  data-testid="plan-badge"
+                  className={`inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded font-bold uppercase ${
+                    user.plan === 'PRO' ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white' :
+                    user.plan === 'BASIC' ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white' :
+                    'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
+                  }`}
+                >
+                  <Crown className="w-2.5 h-2.5" /> {user.plan}
+                </span>
+              </div>
+            )}
           </div>
         </div>
         <div className="flex gap-2">

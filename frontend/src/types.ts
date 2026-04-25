@@ -6,6 +6,11 @@ export interface User {
   blocked: boolean;
   createdAt: string;
   photo?: string;
+  plan?: 'FREE' | 'BASIC' | 'PRO';
+  transactionsUsed?: number;
+  stripeCustomerId?: string;
+  stripeSubscriptionId?: string;
+  planExpiresAt?: string | null;
 }
 
 export interface Transaction {
