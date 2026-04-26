@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Users, Search, Shield, Ban, Unlock, Trash2, Eye, X, TrendingUp, Target, Activity } from 'lucide-react';
+import { Users, Search, Shield, Ban, Unlock, Trash2, Eye, X, TrendingUp, Target, Activity, Zap } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { api, apiErrorMessage } from '../services/api';
@@ -111,6 +111,7 @@ export default function Admin() {
                 <th className="px-5 py-3 font-semibold">Usuário</th>
                 <th className="px-5 py-3 font-semibold">E-mail</th>
                 <th className="px-5 py-3 font-semibold">Papel</th>
+                <th className="px-5 py-3 font-semibold">Plano</th>
                 <th className="px-5 py-3 font-semibold">Status</th>
                 <th className="px-5 py-3 font-semibold">Criado em</th>
                 <th className="px-5 py-3 font-semibold text-right">Ações</th>
@@ -118,9 +119,9 @@ export default function Admin() {
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
               {users === null ? (
-                <tr><td colSpan={6} className="p-6"><div className="skeleton h-8" /></td></tr>
+                <tr><td colSpan={7} className="p-6"><div className="skeleton h-8" /></td></tr>
               ) : users.length === 0 ? (
-                <tr><td colSpan={6} className="p-10 text-center text-slate-400">Nenhum usuário encontrado</td></tr>
+                <tr><td colSpan={7} className="p-10 text-center text-slate-400">Nenhum usuário encontrado</td></tr>
               ) : users.map((u) => (
                 <tr key={u.id} data-testid={`user-row-${u.id}`}>
                   <td className="px-5 py-3">
@@ -134,6 +135,12 @@ export default function Admin() {
                   <td className="px-5 py-3 text-slate-600 dark:text-slate-300">{u.email}</td>
                   <td className="px-5 py-3">
                     <span className={`chip ${u.role === 'ADMIN' ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-700'}`}>{u.role}</span>
+                  </td>
+                  <td className="px-5 py-3">
+                    <span className={`chip ${u.plan === 'PRO' ? 'bg-purple-100 text-purple-700' :
+                      u.plan === 'BASIC' ? 'bg-blue-100 text-blue-700' :
+                        'bg-slate-100 text-slate-700'
+                      }`}>{u.plan || 'FREE'}</span>
                   </td>
                   <td className="px-5 py-3">
                     {u.blocked
@@ -167,7 +174,39 @@ export default function Admin() {
 
 function UserDetail({ userId, onClose }: { userId: string; onClose: () => void }) {
   const [data, setData] = useState<{ user: User; transactions: Transaction[]; goals: Goal[] } | null>(null);
-  useEffect(() => { api.get(`/users/${userId}`).then((r) => setData(r.data)); }, [userId]);
+  const [editingPlan, setEditingPlan] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState<'FREE' | 'BASIC' | 'PRO' | null>(null);
+
+  useEffect(() => {
+    api.get(`/users/${userId}`).then((r) => {
+      setData(r.data);
+      setSelectedPlan(r.data.user.plan || 'FREE');
+    });
+  }, [userId]);
+
+  const savePlan = async () => {
+    if (!selectedPlan || !data) return;
+    try {
+      await api.put(`/users/${userId}`, { plan: selectedPlan });
+      toast.success('Plano alterado com sucesso');
+      setData({ ...data, user: { ...data.user, plan: selectedPlan } });
+      setEditingPlan(false);
+    } catch (e) {
+      toast.error(apiErrorMessage(e));
+    }
+  };
+
+  const planColors = {
+    FREE: 'from-slate-500 to-slate-600',
+    BASIC: 'from-blue-500 to-blue-600',
+    PRO: 'from-purple-500 to-purple-600',
+  };
+
+  const planDescriptions = {
+    FREE: 'Até 100 transações/mês',
+    BASIC: '500 transações/mês + IA',
+    PRO: 'Ilimitado + IA avançada',
+  };
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
@@ -209,6 +248,62 @@ function UserDetail({ userId, onClose }: { userId: string; onClose: () => void }
                   )}
                 </div>
               </div>
+            </div>
+
+            {/* Plano Section */}
+            <div className="mt-6 card !p-5">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <Zap className="w-5 h-5 text-purple-600" />
+                  <h3 className="font-semibold text-lg">Plano</h3>
+                </div>
+                {!editingPlan && (
+                  <button onClick={() => setEditingPlan(true)} className="btn-primary !py-1.5 !px-3 !text-sm">
+                    Alterar
+                  </button>
+                )}
+              </div>
+
+              {editingPlan ? (
+                <div className="space-y-3">
+                  <div className="grid grid-cols-3 gap-3">
+                    {(['FREE', 'BASIC', 'PRO'] as const).map((plan) => (
+                      <button
+                        key={plan}
+                        onClick={() => setSelectedPlan(plan)}
+                        className={`p-4 rounded-xl border-2 transition-all ${selectedPlan === plan
+                            ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20'
+                            : 'border-slate-200 dark:border-slate-700 hover:border-slate-300'
+                          }`}
+                      >
+                        <div className={`inline-block px-3 py-1 rounded-full text-sm font-semibold text-white bg-gradient-to-r ${planColors[plan]} mb-2`}>
+                          {plan}
+                        </div>
+                        <p className="text-xs text-slate-600 dark:text-slate-300">{planDescriptions[plan]}</p>
+                      </button>
+                    ))}
+                  </div>
+                  <div className="flex gap-2 pt-2">
+                    <button onClick={savePlan} className="btn-primary flex-1">
+                      Salvar
+                    </button>
+                    <button onClick={() => setEditingPlan(false)} className="btn-ghost flex-1">
+                      Cancelar
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center gap-3 p-4 rounded-xl bg-gradient-to-r bg-slate-50 dark:bg-slate-800">
+                  <div className={`inline-block px-4 py-2 rounded-lg text-sm font-bold text-white bg-gradient-to-r ${planColors[data.user.plan as 'FREE' | 'BASIC' | 'PRO' || 'FREE']}`}>
+                    {data.user.plan || 'FREE'}
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+                      {planDescriptions[data.user.plan as 'FREE' | 'BASIC' | 'PRO' || 'FREE']}
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="mt-6">
