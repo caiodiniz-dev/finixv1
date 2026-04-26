@@ -816,6 +816,43 @@ app.get('/internal/payment-tx/:sessionId', async (req, res) => {
 });
 
 // ============================================================================
+// STRIPE CHECKOUT (MOCK - sem Stripe SDK)
+// ============================================================================
+app.post('/api/stripe/checkout', authenticate, async (req, res) => {
+  try {
+    const { plan_id } = req.body;
+    const user = (req as any).user;
+
+    if (!['BASIC', 'PRO'].includes(plan_id)) {
+      return res.status(400).json({ error: 'Plano inválido' });
+    }
+
+    // Create payment transaction record
+    const sessionId = uuidv4();
+    const plan = PLANS[plan_id as keyof typeof PLANS];
+
+    await prisma.paymentTransaction.create({
+      data: {
+        userId: user.id,
+        userEmail: user.email,
+        sessionId,
+        amount: plan.price,
+        currency: 'BRL',
+        plan: plan_id,
+        paymentStatus: 'pending',
+      },
+    });
+
+    // For now, return a mock stripe URL
+    // In production, would use Stripe SDK to create actual session
+    const mockUrl = `https://checkout.stripe.com/pay/cs_test_${sessionId}`;
+    res.json({ url: mockUrl, sessionId });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || 'Erro ao criar checkout' });
+  }
+});
+
+// ============================================================================
 // HEALTH
 // ============================================================================
 app.get('/', (req, res) => {

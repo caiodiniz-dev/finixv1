@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
+import './index.css';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Landing from './pages/Landing';
 import Login from './pages/Login';
@@ -9,6 +10,7 @@ import Dashboard from './pages/Dashboard';
 import Transactions from './pages/Transactions';
 import Goals from './pages/Goals';
 import Budgets from './pages/Budgets';
+import Plans from './pages/Plans';
 import Profile from './pages/Profile';
 import Admin from './pages/Admin';
 import AppLayout from './layouts/AppLayout';
@@ -63,6 +65,7 @@ export default function App() {
             <Route path="transactions" element={<Transactions />} />
             <Route path="goals" element={<Goals />} />
             <Route path="budgets" element={<Budgets />} />
+            <Route path="plans" element={<Plans />} />
             <Route path="profile" element={<Profile />} />
             <Route path="admin" element={<ProtectedRoute admin><Admin /></ProtectedRoute>} />
           </Route>
