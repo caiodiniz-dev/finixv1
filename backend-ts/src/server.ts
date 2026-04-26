@@ -192,33 +192,49 @@ const userPublic = (u: any) => ({
 // AUTH
 // ============================================================================
 app.post('/api/auth/register', async (req, res) => {
-  const data = registerSchema.parse(req.body);
-  const existing = await prisma.user.findUnique({ where: { email: data.email.toLowerCase() } });
-  if (existing) {
-    return res.status(400).json({ error: 'Email já cadastrado' });
+  try {
+    const data = registerSchema.parse(req.body);
+    const existing = await prisma.user.findUnique({ where: { email: data.email.toLowerCase() } });
+    if (existing) {
+      return res.status(400).json({ error: 'Email já cadastrado' });
+    }
+    const user = await prisma.user.create({
+      data: {
+        id: uuidv4(),
+        name: data.name.trim(),
+        email: data.email.toLowerCase(),
+        passwordHash: await bcrypt.hash(data.password, 10),
+        plan: 'FREE',
+        transactionsMonth: currentMonthKey(),
+      },
+    });
+    const token = jwt.sign({ sub: user.id, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+    res.json({ user: userPublic(user), token });
+  } catch (err: any) {
+    console.error('Register error:', err);
+    if (err.name === 'ZodError') {
+      return res.status(400).json({ error: 'Dados inválidos' });
+    }
+    res.status(500).json({ error: err.message || 'Erro ao criar conta' });
   }
-  const user = await prisma.user.create({
-    data: {
-      id: uuidv4(),
-      name: data.name.trim(),
-      email: data.email.toLowerCase(),
-      passwordHash: await bcrypt.hash(data.password, 10),
-      plan: 'FREE',
-      transactionsMonth: currentMonthKey(),
-    },
-  });
-  const token = jwt.sign({ sub: user.id, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
-  res.json({ user: userPublic(user), token });
 });
 
 app.post('/api/auth/login', async (req, res) => {
-  const data = loginSchema.parse(req.body);
-  const user = await prisma.user.findUnique({ where: { email: data.email.toLowerCase() } });
-  if (!user || !(await bcrypt.compare(data.password, user.passwordHash)) || user.blocked) {
-    return res.status(401).json({ error: 'Credenciais inválidas' });
+  try {
+    const data = loginSchema.parse(req.body);
+    const user = await prisma.user.findUnique({ where: { email: data.email.toLowerCase() } });
+    if (!user || !(await bcrypt.compare(data.password, user.passwordHash)) || user.blocked) {
+      return res.status(401).json({ error: 'Credenciais inválidas' });
+    }
+    const token = jwt.sign({ sub: user.id, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+    res.json({ user: userPublic(user), token });
+  } catch (err: any) {
+    console.error('Login error:', err);
+    if (err.name === 'ZodError') {
+      return res.status(400).json({ error: 'Dados inválidos' });
+    }
+    res.status(500).json({ error: err.message || 'Erro ao fazer login' });
   }
-  const token = jwt.sign({ sub: user.id, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
-  res.json({ user: userPublic(user), token });
 });
 
 app.get('/api/auth/me', authenticate, (req, res) => {
@@ -642,7 +658,7 @@ Seja conciso, prático e em português.`;
         const text = data.content[0].text;
         const jsonMatch = text.match(/\{[\s\S]*\}/);
         if (jsonMatch) insights = JSON.parse(jsonMatch[0]).insights || insights;
-      } catch {}
+      } catch { }
     }
     res.json({ insights });
   } catch (err) {
@@ -838,9 +854,18 @@ const seedData = async () => {
         transactionsMonth: currentMonthKey(),
       },
     });
-    console.log(`Admin criado: ${adminEmail}`);
-  } else if (admin.plan !== 'PRO') {
-    await prisma.user.update({ where: { id: admin.id }, data: { plan: 'PRO' } });
+    console.log(`✅ Admin criado: ${adminEmail} / Admin@123`);
+  } else {
+    // Ensure admin has ADMIN role and PRO plan
+    if (admin.role !== 'ADMIN' || admin.plan !== 'PRO') {
+      await prisma.user.update({
+        where: { id: admin.id },
+        data: { role: 'ADMIN', plan: 'PRO' },
+      });
+      console.log(`✅ Admin atualizado: ${adminEmail}`);
+    } else {
+      console.log(`✅ Admin já existe: ${adminEmail}`);
+    }
   }
 };
 

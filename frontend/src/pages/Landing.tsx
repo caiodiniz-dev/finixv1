@@ -1,12 +1,14 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion, useScroll, useTransform, useInView, AnimatePresence } from 'framer-motion';
 import {
   ArrowRight, CheckCircle2, PieChart, Target, Shield, Zap, TrendingUp, BarChart3, Sparkles,
   Wallet, FileDown, RefreshCw, Brain, LineChart, Users, Star, Quote, ChevronRight, ChevronLeft, Play,
-  ShieldCheck, Lock, Clock, MousePointer2, PiggyBank
+  ShieldCheck, Lock, Clock, MousePointer2, PiggyBank, Loader2
 } from 'lucide-react';
 import { Logo } from '../components/Logo';
+import { useAuth } from '../contexts/AuthContext';
+import toast from 'react-hot-toast';
 
 function useCountUp(to: number, duration = 1.6, start = false) {
   const [val, setVal] = useState(0);
@@ -42,6 +44,45 @@ export default function Landing() {
   const { scrollYProgress } = useScroll();
   const heroY = useTransform(scrollYProgress, [0, 0.3], [0, -60]);
   const heroOpacity = useTransform(scrollYProgress, [0, 0.35], [1, 0.2]);
+  const { user } = useAuth();
+  const nav = useNavigate();
+  const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
+
+  const handleCheckout = async (planId: 'BASIC' | 'PRO') => {
+    if (!user) {
+      toast.error('Faça login para continuar');
+      nav('/login');
+      return;
+    }
+
+    try {
+      setLoadingPlan(planId);
+      const res = await fetch('http://localhost:8000/api/checkout/session', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('finix_token')}`,
+        },
+        body: JSON.stringify({
+          plan_id: planId,
+          origin_url: window.location.origin,
+        }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        toast.error(err.detail || 'Erro ao criar sessão');
+        return;
+      }
+
+      const data = await res.json();
+      window.location.href = data.url;
+    } catch (e: any) {
+      toast.error(e.message || 'Erro ao processar pagamento');
+    } finally {
+      setLoadingPlan(null);
+    }
+  };
 
   const features = [
     { icon: BarChart3, title: 'Dashboard Inteligente', desc: 'Gráficos em tempo real com uma visão completa de suas finanças.', gradient: 'from-brand-blue to-cyan-500' },
@@ -335,14 +376,13 @@ export default function Landing() {
                   </li>
                 ))}
               </ul>
-              <a
-                href="https://wa.me/19994737425?text=Olá,%20gostaria%20de%20assinar%20o%20Plano%20Pro%20do%20Finix"
-                target="_blank"
-                rel="noreferrer"
-                className="w-full mt-8 inline-flex items-center justify-center gap-2 py-3 px-6 bg-gradient-to-r from-brand-blue to-brand-purple text-white rounded-xl font-bold hover:shadow-2xl transition-all hover:scale-105"
+              <button
+                onClick={() => handleCheckout('PRO')}
+                disabled={loadingPlan === 'PRO'}
+                className="w-full mt-8 inline-flex items-center justify-center gap-2 py-3 px-6 bg-gradient-to-r from-brand-blue to-brand-purple text-white rounded-xl font-bold hover:shadow-2xl transition-all hover:scale-105 disabled:opacity-50"
               >
-                Assinar agora <ArrowRight className="w-4 h-4" />
-              </a>
+                {loadingPlan === 'PRO' ? <Loader2 className="w-4 h-4 animate-spin" /> : <>Assinar agora <ArrowRight className="w-4 h-4" /></>}
+              </button>
             </motion.div>
 
             {/* Plano Básico */}
@@ -366,14 +406,13 @@ export default function Landing() {
                   </li>
                 ))}
               </ul>
-              <a
-                href="https://wa.me/19994737425?text=Olá,%20gostaria%20de%20assinar%20o%20Plano%20Básico%20do%20Finix"
-                target="_blank"
-                rel="noreferrer"
-                className="w-full mt-8 inline-flex items-center justify-center gap-2 py-3 px-6 bg-gradient-to-r from-brand-blue to-brand-purple text-white rounded-xl font-semibold hover:shadow-lg transition-all"
+              <button
+                onClick={() => handleCheckout('BASIC')}
+                disabled={loadingPlan === 'BASIC'}
+                className="w-full mt-8 inline-flex items-center justify-center gap-2 py-3 px-6 bg-gradient-to-r from-brand-blue to-brand-purple text-white rounded-xl font-semibold hover:shadow-lg transition-all disabled:opacity-50"
               >
-                Assinar agora <ArrowRight className="w-4 h-4" />
-              </a>
+                {loadingPlan === 'BASIC' ? <Loader2 className="w-4 h-4 animate-spin" /> : <>Assinar agora <ArrowRight className="w-4 h-4" /></>}
+              </button>
             </motion.div>
           </div>
         </div>

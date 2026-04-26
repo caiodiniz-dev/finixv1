@@ -35,9 +35,12 @@ api.interceptors.response.use(
 );
 
 export function apiErrorMessage(e: any): string {
-  const d = e?.response?.data?.detail;
-  if (typeof d === 'string') return d;
-  if (Array.isArray(d)) return d.map((x: any) => x?.msg || JSON.stringify(x)).join(' ');
-  if (d?.msg) return d.msg;
-  return e?.message || 'Algo deu errado';
+  // Try different error message formats from backend
+  const data = e?.response?.data;
+  if (typeof data?.detail === 'string') return data.detail;
+  if (typeof data?.error === 'string') return data.error;
+  if (typeof data?.message === 'string') return data.message;
+  if (Array.isArray(data?.detail)) return data.detail.map((x: any) => x?.msg || JSON.stringify(x)).join(' ');
+  if (e?.message) return e.message;
+  return 'Algo deu errado';
 }
