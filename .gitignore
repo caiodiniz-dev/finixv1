@@ -53,3 +53,9 @@ credentials.json
 *.pem
 *.key
 .credentials
+
+
+.env
+*.db
+memory/
+node_modules/
